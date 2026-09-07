@@ -1,0 +1,47 @@
+name: ShipNotes Release Notes
+
+on:
+  push:
+    branches: [qa]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pixelLoom
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history — required for `git log before..after`
+
+      - name: Checkout shipnotes
+        uses: actions/checkout@v4
+        with:
+          repository: firdous-wani/shipnotes
+          token: ${{ secrets.SHIPNOTES_REPO_TOKEN }}
+          path: shipnotes-tool
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build shipnotes
+        run: |
+          cd shipnotes-tool
+          npm ci
+          npm run build
+
+      - name: Generate release notes
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node shipnotes-tool/dist/cli.js release \
+            --workflow qa \
+            --from "${{ github.event.after }}" \
+            --to "${{ github.event.before }}" \
+            >> "$GITHUB_STEP_SUMMARY"
