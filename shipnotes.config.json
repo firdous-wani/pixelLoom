@@ -1,0 +1,8 @@
+{
+    "workflows": {
+        "qa": {
+            "from": "staging",
+            "to": "qa"
+        }
+    }
+}
